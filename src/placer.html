@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbe — Colocar zona</title>
+  <link rel="stylesheet" href="placer.css">
+</head>
+<body>
+  <div id="shade"></div>
+  <div id="ghost"></div>
+  <div id="zone" role="button" tabindex="0" aria-label="Zona de activación. Usa las flechas para moverla."><span>Arrástrame</span></div>
+  <div id="card">
+    <h1>Coloca la zona</h1>
+    <p id="msg">Arrastra el círculo al punto donde quieres esconder Orbe. La media rueda se abrirá mirando hacia dentro de la pantalla.</p>
+    <div class="row">
+      <button id="next" hidden>Siguiente monitor</button>
+      <span class="spacer"></span>
+      <button id="cancel">Cancelar <kbd>Esc</kbd></button>
+      <button id="save" class="primary">Guardar zona <kbd>Enter</kbd></button>
+    </div>
+  </div>
+  <script src="glyphs.js"></script>
+  <script src="geometry.js"></script>
+  <script src="placer.js"></script>
+</body>
+</html>

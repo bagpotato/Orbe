@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2A3A6E"/>
+      <stop offset="1" stop-color="#151E38"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#5B7CFA" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5B7CFA" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.30"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#glow)"/>
+  <!-- media rueda: centro (250, 512) -->
+  <path d="M250 142 A370 370 0 0 1 250 882 Z" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="14"/>
+  <path d="M250 252 A260 260 0 0 1 250 772" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="8"/>
+  <path d="M250 372 A140 140 0 0 1 250 652" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="8"/>
+  <path d="M250 432 A80 80 0 0 1 250 592 Z" fill="#FFFFFF" fill-opacity="0.85"/>
+  <!-- apps -->
+  <circle cx="555" cy="512" r="58" fill="#5B7CFA" stroke="#FFFFFF" stroke-width="10"/>
+  <circle cx="514" cy="340" r="48" fill="#9BE3D6" stroke="#FFFFFF" stroke-width="10"/>
+  <circle cx="514" cy="684" r="48" fill="#F2A7C3" stroke="#FFFFFF" stroke-width="10"/>
+  <circle cx="380" cy="512" r="42" fill="#FFFFFF"/>
+  <circle cx="355" cy="415" r="36" fill="#B9A7F2" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="355" cy="609" r="36" fill="#9BE3D6" stroke="#FFFFFF" stroke-width="8"/>
+</svg>

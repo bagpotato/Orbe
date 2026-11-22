@@ -1,0 +1,182 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+}
+
+#stage { position: absolute; left: 0; top: 0; }
+
+#wheel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+#wheel.live { visibility: visible; }
+
+/* Placa y centro: círculos recortados a la mitad derecha; wheel.js los rota según facing. */
+#plate, #hub {
+  position: absolute;
+  border-radius: 50%;
+  clip-path: inset(0 0 0 50%);
+  pointer-events: none;
+}
+#plate {
+  --tint: rgba(91,124,250,.12);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.20)),
+    linear-gradient(var(--tint), var(--tint)),
+    rgba(30,42,74,.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.45),
+    inset 0 0 48px rgba(255,255,255,.14);
+}
+#hub {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,.46)),
+    rgba(30,42,74,.25);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+}
+
+.track {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.22);
+  transition: border-color .2s, background-color .2s;
+}
+.track.on { border-color: rgba(255,255,255,.62); background-color: rgba(255,255,255,.05); }
+
+.item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: #fff;
+  background: linear-gradient(160deg, rgba(255,255,255,.32), rgba(30,42,74,.58) 55%, rgba(30,42,74,.42));
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,.75),
+    inset 0 0 0 1px rgba(255,255,255,.35),
+    0 12px 26px -10px rgba(10,16,40,.6);
+  transition: background .2s;
+  outline: none;
+}
+.item svg { width: 44%; height: 44%; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); pointer-events: none; }
+.item img { width: 74%; height: 74%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+.item:hover, .item:focus-visible {
+  background: linear-gradient(160deg, rgba(255,255,255,.45), rgba(91,124,250,.85));
+  z-index: 2;
+}
+.item:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 12px 26px -10px rgba(10,16,40,.6); }
+
+.tip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 6px;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(24,33,58,.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+.item:hover .tip, .item:focus-visible .tip { opacity: 1; }
+
+.ring-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: rgba(255,255,255,.82);
+  background: rgba(24,33,58,.55);
+  pointer-events: none;
+  transition: color .2s, background .2s;
+}
+.ring-name.on { color: #fff; background: rgba(91,124,250,.85); }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translate(-50%, 10px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(24,33,58,.6);
+  border: 1px solid rgba(255,255,255,.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: .25s;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Modo demo (navegador normal, sin Tauri) ---------- */
+body.demo {
+  background:
+    radial-gradient(40% 55% at 18% 30%, #F2A7C3 0%, transparent 70%),
+    radial-gradient(45% 60% at 82% 25%, #5B7CFA 0%, transparent 70%),
+    radial-gradient(50% 55% at 60% 90%, #9BE3D6 0%, transparent 70%),
+    radial-gradient(35% 40% at 35% 80%, #8E6CF0 0%, transparent 70%),
+    #1E2A4A;
+}
+body.demo.light {
+  background:
+    radial-gradient(40% 55% at 18% 30%, #FBD9E6 0%, transparent 70%),
+    radial-gradient(45% 60% at 82% 25%, #C9D5FF 0%, transparent 70%),
+    radial-gradient(50% 55% at 60% 90%, #D2F4EE 0%, transparent 70%),
+    #F2F5FA;
+}
+/* En Windows el desenfoque lo pone Acrylic; en el navegador lo imitamos. */
+body.demo #plate { backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+body.demo .item { backdrop-filter: blur(14px) saturate(190%); -webkit-backdrop-filter: blur(14px) saturate(190%); }
+
+#demo-bar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  z-index: 10;
+}
+#demo-bar[hidden] { display: none; }
+#demo-bar button {
+  appearance: none;
+  border: 1px solid rgba(24,33,58,.15);
+  background: rgba(255,255,255,.85);
+  color: #18213A;
+  font: 600 13px "Segoe UI", system-ui, sans-serif;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+#demo-bar button:hover { background: #fff; }
+#demo-bar button:focus-visible { outline: 3px solid #5B7CFA; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

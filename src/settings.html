@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbe — Ajustes</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <header>
+    <h1>Orbe</h1>
+    <div class="actions">
+      <button id="place">Colocar zona</button>
+      <button id="reset">Descartar cambios</button>
+      <button id="save" class="primary">Guardar</button>
+    </div>
+  </header>
+
+  <main>
+    <aside id="library" aria-labelledby="lib-title">
+      <h2 id="lib-title">Apps instaladas</h2>
+      <input id="search" type="search" placeholder="Buscar…" aria-label="Buscar apps instaladas">
+      <ul id="installed" aria-live="polite"><li class="muted">Cargando…</li></ul>
+      <details id="manual">
+        <summary>Añadir a mano</summary>
+        <label>Nombre <input id="m-nombre" autocomplete="off"></label>
+        <label>Ruta o URI <input id="m-ruta" autocomplete="off" placeholder="C:\…\app.exe, ms-settings:, https://…"></label>
+        <label>Argumentos <input id="m-args" autocomplete="off"></label>
+        <button id="m-add">Añadir al último anillo</button>
+      </details>
+    </aside>
+
+    <section id="rings-panel" aria-labelledby="rings-title">
+      <div class="section-head">
+        <div>
+          <h2 id="rings-title">Anillos</h2>
+          <p>De dentro hacia fuera. Arrastra apps entre anillos o desde la lista.</p>
+        </div>
+        <button id="add-ring">Añadir anillo</button>
+      </div>
+      <div id="rings"></div>
+    </section>
+
+    <aside id="inspector">
+      <h2>App seleccionada</h2>
+      <p id="no-app" class="muted">Selecciona una app para editarla.</p>
+      <div id="app-form" hidden>
+        <div class="preview"><span id="f-icon" class="icon"></span><strong id="f-title"></strong></div>
+        <label>Nombre <input id="f-nombre" autocomplete="off"></label>
+        <label>Ruta o URI <input id="f-ruta" autocomplete="off"></label>
+        <label>Argumentos <input id="f-args" autocomplete="off"></label>
+        <fieldset class="img-pick">
+          <legend>Imagen</legend>
+          <div id="f-lib" class="lib-grid" role="radiogroup" aria-label="Imagen de la app"></div>
+          <label class="file-btn">
+            <input id="f-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml,.ico,.svg">
+            Importar imagen…
+          </label>
+          <p class="hint">Iconos Liquid Glass de Icons8.</p>
+        </fieldset>
+        <label>Glifo (si no hay ninguna imagen) <select id="f-icono"></select></label>
+        <button id="f-remove" class="danger">Quitar del anillo</button>
+      </div>
+
+      <h2>Comportamiento</h2>
+      <div class="grid2">
+        <label>Retardo al abrir (ms) <input id="c-retardo" type="number" min="0" max="5000" step="10"></label>
+        <label>Margen al cerrar (ms) <input id="c-gracia" type="number" min="0" max="5000" step="10"></label>
+        <label>Tamaño de la zona (px) <input id="c-tamano" type="number" min="8" max="200"></label>
+        <label>Scroll por hueco <input id="c-paso" type="number" min="5" max="500"></label>
+      </div>
+      <label>Orientación
+        <select id="c-orientacion">
+          <option value="auto">Automática (hacia dentro)</option>
+          <option value="derecha">Mirando a la derecha</option>
+          <option value="izquierda">Mirando a la izquierda</option>
+          <option value="abajo">Mirando hacia abajo</option>
+          <option value="arriba">Mirando hacia arriba</option>
+        </select>
+      </label>
+      <label class="check"><input id="c-invertir" type="checkbox"> Invertir sentido del giro</label>
+      <label>Tinte del cristal
+        <span class="tint-row">
+          <input id="c-tinte" type="color" aria-label="Color del tinte">
+          <input id="c-tinte-a" type="range" min="0" max="60" aria-label="Intensidad del tinte">
+          <output id="c-tinte-out"></output>
+        </span>
+      </label>
+    </aside>
+  </main>
+
+  <div id="status" role="status"></div>
+
+  <script src="glyphs.js"></script>
+  <script src="library.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

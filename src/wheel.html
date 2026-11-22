@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbe</title>
+  <link rel="stylesheet" href="wheel.css">
+</head>
+<body>
+<div id="demo-bar" hidden>
+  <button data-facing="0">Borde izquierdo</button>
+  <button data-facing="180">Borde derecho</button>
+  <button data-facing="90">Borde superior</button>
+  <button data-facing="-90">Borde inferior</button>
+  <button id="demo-open">Abrir / cerrar</button>
+  <button id="demo-bg">Fondo claro / oscuro</button>
+</div>
+<div id="stage">
+  <div id="wheel" aria-hidden="true">
+    <div id="plate"></div>
+    <div id="hub"></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script src="glyphs.js"></script>
+<script src="geometry.js"></script>
+<script src="wheel.js"></script>
+</body>
+</html>

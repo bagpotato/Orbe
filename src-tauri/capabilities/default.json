@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permisos de Orbe",
+  "windows": ["wheel", "settings", "placer"],
+  "permissions": ["core:default"]
+}
