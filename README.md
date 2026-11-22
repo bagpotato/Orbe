@@ -1,6 +1,6 @@
 # Orbe
 
-![Demo de Orbe](https://github.com/bagpotato/orbe/blob/main/docs/video.gif?raw=true)
+![Demo de Orbe](https://github.com/bagpotato/orbe/blob/main/docs/Orbe.gif?raw=true)
 
 ## Uso
 
