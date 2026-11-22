@@ -1,8 +1,6 @@
 # Orbe
 
-Media rueda de apps con aspecto de cristal, escondida en un punto de la pantalla. Pasas el ratón por la zona y se abre mirando hacia dentro; cada anillo gira por separado con la rueda del ratón. Versión 1: **Windows 10/11** (Tauri 2 + Rust + HTML/CSS/JS sin frameworks).
-
-El planning original está en [docs/PLAN.html](docs/PLAN.html). Este README describe lo que está construido (fases 1 a 5).
+![Demo de Orbe](https://github.com/bagpotato/orbe/blob/main/docs/video.gif?raw=true)
 
 ## Uso
 
