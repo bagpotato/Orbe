@@ -234,6 +234,7 @@ fn resolve_linux_icon(icon_name: &str) -> Option<PathBuf> {
 }
 
 /// Busca un icono Freedesktop por nombre o ruta absoluta en los directorios de temas y pixmaps.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn find_icon_in_dirs(
     icon_name: &str,
     icon_dirs: &[PathBuf],

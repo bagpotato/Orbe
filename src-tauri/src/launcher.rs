@@ -100,6 +100,7 @@ pub fn expand_env(s: &str) -> String {
 }
 
 /// Divide un campo `Exec=` de un `.desktop` en programa + argumentos, quitando códigos `%u`, `%F`, etc.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn parse_exec_command(exec: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut cur = String::new();
