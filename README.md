@@ -7,10 +7,25 @@
 ```powershell
 npm install
 npx tauri dev          # development
-npx tauri build        # .msi installer in src-tauri/target/release/bundle/msi
+npx tauri build        # .msi (Windows) or .deb / .rpm / .AppImage (Linux)
 ```
 
-Or directly: `cargo build` in `src-tauri` and run `src-tauri/target/debug/orbe.exe`.
+Or directly: `cargo build` in `src-tauri` and run `src-tauri/target/debug/orbe.exe` (Windows) or `src-tauri/target/debug/orbe` (Linux).
+
+### Linux (X11 & Wayland)
+
+Build dependencies on Debian/Ubuntu (24.04+):
+
+```bash
+sudo apt install build-essential libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libx11-dev libgtk-layer-shell0
+```
+
+- **X11**: uses `XQueryPointer`, `_NET_WM_STATE_FULLSCREEN` detection, and `input_shape_combine_region` pass-through (identical behavior to Windows).
+  - A compositor (picom, KWin, Mutter, xfwm4…) is needed for real transparency. Without one the wheel is clipped to its half-disc shape and hidden while closed, but the area behind it is drawn black.
+- **Wayland (Hyprland, Sway, Niri, KDE)**: loads `libgtk-layer-shell.so.0` dynamically at runtime (no link-time dependency) to create an invisible overlay trigger zone and position the half-wheel in `LAYER_OVERLAY`. The `.deb`/`.rpm` depend on it and the AppImage bundles it; when building from source install `gtk-layer-shell` on your distro.
+  - On Hyprland, you can enable native blur behind the wheel with `layerrule = blur, orbe`.
+  - **GNOME Wayland is not supported**: Mutter lacks `wlr-layer-shell`, so Orbe cannot see the cursor and the wheel never opens. Orbe shows a notification at startup when this happens. Use a GNOME on Xorg session instead; Settings/Placer still open via CLI (`orbe --ajustes`, `orbe --colocar`).
+- **`orbe:bloquear`**: GNOME/KDE/Xfce… use `loginctl lock-session`; Hyprland uses `hyprlock`, other Wayland compositors `swaylock -f`, bare X11 window managers `i3lock`/`xsecurelock`/`slock`. Install one of them on tiling setups: `loginctl` alone silently does nothing without an idle daemon listening.
 
 - **Default zone**: center of the primary monitor's left edge.
 - **System tray**: left-click opens settings; menu with *Settings…*, *Place zone*, *Pause/Resume*, and *Exit*.
@@ -24,7 +39,10 @@ Testing the interface in a standard browser: serve `src/` (for example `npx http
 
 ## Configuration
 
-`%APPDATA%\orbe\config.toml`. Created with 3 sample rings (System, Work, Favorites) on first launch. If corrupted, it is backed up to `config.toml.bak`. Everything can be edited from settings; the file supports:
+- **Windows**: `%APPDATA%\orbe\config.toml`
+- **Linux**: `$XDG_CONFIG_HOME/orbe/config.toml` (defaults to `~/.config/orbe/config.toml`)
+
+Created with 3 sample rings (System, Work, Favorites) on first launch. If corrupted, it is backed up to `config.toml.bak`. Everything can be edited from settings; the file supports:
 
 ```toml
 [zona]
@@ -90,10 +108,11 @@ Icons in `src/img/apps` are from the *Liquid Glass* collection by [Icons8](https
 | `src-tauri/src/cursor.rs` | State machine *hidden → armed → open → closing* (pure, with tests) and cursor polling thread at ~60 Hz |
 | `src-tauri/src/geometry.rs` | Trigger zone, orientation, center, scale, and "cursor inside" hit-tests in physical pixels (multi-monitor & HiDPI) |
 | `src-tauri/src/win.rs` | Win32: non-activating window, half-wheel region clipping, full-screen detection, lock screen |
-| `src-tauri/src/launcher.rs` | `ShellExecuteW` with foreground delegation permissions |
-| `src-tauri/src/icons.rs` | App images: bundled library, imported image, or system icon (48 px, serialized extraction) with cache |
+| `src-tauri/src/linux.rs` | Linux (X11 & Wayland layer-shell): trigger zone, region clipping, full-screen detection, lock screen |
+| `src-tauri/src/launcher.rs` | `ShellExecuteW` (Windows) and `.desktop` / `xdg-open` / detached spawn (Linux) |
+| `src-tauri/src/icons.rs` | App images: bundled library, imported image, Windows executable icon or Freedesktop icon theme with cache |
 | `src/library.js`, `src/img/apps/` | Bundled icon library and automatic name matching |
-| `src-tauri/src/apps.rs` | Start Menu shortcuts indexer for the ring editor |
+| `src-tauri/src/apps.rs` | Start Menu (`.lnk`/`.url`) on Windows and `.desktop` applications indexer on Linux |
 | `src-tauri/src/config.rs` | TOML config, default values, and validation |
 | `src/geometry.js` | Rendering geometry sharing the same mathematical formulas as `geometry.rs` |
 | `src/wheel.*` | Half-wheel UI (animates with `requestAnimationFrame` only while in motion) |
@@ -109,8 +128,7 @@ Non-obvious design decisions:
 
 Tests: `cargo test --lib` in `src-tauri` (26 tests: state machine, geometry, config, icons & images, launcher, apps).
 
-## Roadmap / Pending (phases 6 & 7)
+## Roadmap / Pending (phase 7)
 
-- Linux support (X11 / Wayland layer-shell).
-- Global keyboard shortcut to open without a mouse, run on system startup, verify `.msi` installer on a clean machine.
+- Global keyboard shortcut to open without a mouse, run on system startup, verify `.msi` / `.deb` / `.AppImage` installers on clean machines.
 - The `rueda.atajo` and `aspecto.tema` fields are saved in config but not yet hooked up.

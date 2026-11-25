@@ -16,8 +16,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-single-instance = "2"
 toml = "0.8"
-png = "0.17"
 base64 = "0.22"
+
+[dev-dependencies]
+png = "0.17"
+
+[target.'cfg(windows)'.dependencies]
+png = "0.17"
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.61"
@@ -31,6 +36,11 @@ features = [
   "Win32_System_Shutdown",
   "Win32_Storage_FileSystem",
 ]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+x11-dl = "2.21"
+libc = "0.2"
 
 [profile.release]
 lto = true

@@ -118,3 +118,38 @@ pub fn foreground_is_fullscreen() -> bool {
 pub fn lock_workstation() -> Result<(), String> {
     unsafe { LockWorkStation() }.map_err(|e| format!("No se pudo bloquear el equipo: {e}"))
 }
+
+fn hwnd_of(w: &tauri::WebviewWindow) -> Option<HWND> {
+    w.hwnd().ok().map(|h| HWND(h.0 as _))
+}
+
+pub fn setup_wheel(w: &tauri::WebviewWindow) {
+    if let Some(h) = hwnd_of(w) {
+        make_tool_noactivate(h);
+        set_empty_region(h);
+        show_no_activate(h, 0, 0, 532, 532);
+    }
+}
+
+pub fn show_wheel(w: &tauri::WebviewWindow, g: &crate::geometry::ZoneGeo) {
+    if let Some(h) = hwnd_of(w) {
+        set_half_disc_region(h, g.size_phys, g.ps.round() as i32 + 2, g.facing);
+        show_no_activate(h, g.win_x, g.win_y, g.size_phys, g.size_phys);
+    }
+}
+
+pub fn hide_wheel(w: &tauri::WebviewWindow) {
+    if let Some(h) = hwnd_of(w) {
+        set_empty_region(h);
+    }
+}
+
+pub fn uses_native_trigger() -> bool {
+    false
+}
+
+pub fn native_hover_state() -> (bool, bool) {
+    (false, false)
+}
+
+pub fn sync_trigger_zone(_app: &tauri::AppHandle, _g: &crate::geometry::ZoneGeo) {}

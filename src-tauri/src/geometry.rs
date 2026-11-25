@@ -43,6 +43,8 @@ pub struct ZoneGeo {
     pub size_phys: i32,
     pub win_x: i32,
     pub win_y: i32,
+    pub mon_x: i32,
+    pub mon_y: i32,
     pub sf: f64,
 }
 
@@ -118,8 +120,38 @@ pub fn compute(mon: MonitorRect, x: f64, y: f64, tamano: u32, orientacion: &str,
         size_phys,
         win_x: (cx_abs - size_phys as f64 / 2.0).round() as i32,
         win_y: (cy_abs - size_phys as f64 / 2.0).round() as i32,
+        mon_x: mon.x,
+        mon_y: mon.y,
         sf,
     }
+}
+
+/// Franjas horizontales `(x, y, width)` de la media rueda dentro de un cuadrado `size x size`.
+pub fn half_disc_spans(size: i32, radius: i32, facing_deg: f64) -> Vec<(i32, i32, i32)> {
+    if size <= 0 || radius <= 0 {
+        return Vec::new();
+    }
+    let c = size / 2;
+    let (l, t, r, b) = match facing_deg.round() as i32 {
+        0 => (c - 2, 0, size, size),
+        180 => (0, 0, c + 2, size),
+        90 => (0, c - 2, size, size),
+        _ => (0, 0, size, c + 2),
+    };
+    let y0 = (c - radius).max(t).max(0);
+    let y1 = (c + radius + 1).min(b).min(size);
+    let r2 = (radius as f64) * (radius as f64);
+    let mut spans = Vec::with_capacity((y1 - y0).max(0) as usize);
+    for y in y0..y1 {
+        let dy = (y - c) as f64;
+        let dx = (r2 - dy * dy).max(0.0).sqrt().round() as i32;
+        let x0 = (c - dx).max(l).max(0);
+        let x1 = (c + dx + 1).min(r).min(size);
+        if x1 > x0 {
+            spans.push((x0, y, x1 - x0));
+        }
+    }
+    spans
 }
 
 pub fn in_zone(g: &ZoneGeo, px: f64, py: f64) -> bool {
@@ -201,5 +233,23 @@ mod tests {
         assert_eq!(plate_r(4), 295.0);
         assert_eq!(plate_r(0), plate_r(1));
         assert_eq!(plate_r(9), plate_r(4));
+    }
+
+    #[test]
+    fn franjas_media_rueda() {
+        let right = half_disc_spans(532, 238, 0.0);
+        assert!(!right.is_empty());
+        assert!(right.iter().all(|&(x, y, w)| x >= 264 && x + w <= 532 && y >= 0 && y < 532));
+
+        let left = half_disc_spans(532, 238, 180.0);
+        assert!(left.iter().all(|&(x, y, w)| x >= 0 && x + w <= 268 && y >= 0 && y < 532));
+
+        let down = half_disc_spans(532, 238, 90.0);
+        assert!(down.iter().all(|&(_, y, _)| y >= 264 && y < 532));
+
+        let up = half_disc_spans(532, 238, -90.0);
+        assert!(up.iter().all(|&(_, y, _)| y >= 0 && y < 268));
+
+        assert!(half_disc_spans(0, 100, 0.0).is_empty());
     }
 }
