@@ -10,6 +10,8 @@ pub struct InstalledApp {
     pub ruta: String,
 }
 
+// Solo lo usa Linux, pero se compila (y se testea) en todas las plataformas.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct DesktopEntry {
     pub nombre: String,
@@ -147,6 +149,7 @@ pub(crate) fn find_desktop_file(id_or_path: &str) -> Option<PathBuf> {
 
 /// Parsea la sección `[Desktop Entry]` de un archivo `.desktop`.
 /// Devuelve `None` si está oculto (`NoDisplay=true` / `Hidden=true`), no es `Application` o no tiene `Exec`.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn parse_desktop_entry(content: &str, lang: &str) -> Option<DesktopEntry> {
     let mut in_section = false;
     let mut entry_type = String::new();

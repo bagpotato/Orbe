@@ -127,6 +127,8 @@ pub fn compute(mon: MonitorRect, x: f64, y: f64, tamano: u32, orientacion: &str,
 }
 
 /// Franjas horizontales `(x, y, width)` de la media rueda dentro de un cuadrado `size x size`.
+/// La usa el recorte `cairo::Region` de Linux; Windows recorta con regiones GDI propias.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub fn half_disc_spans(size: i32, radius: i32, facing_deg: f64) -> Vec<(i32, i32, i32)> {
     if size <= 0 || radius <= 0 {
         return Vec::new();
