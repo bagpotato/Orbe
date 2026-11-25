@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Orbe — Ajustes</title>
   <link rel="stylesheet" href="settings.css">
 </head>
+
 <body>
   <header>
     <h1>Orbe</h1>
@@ -20,11 +22,14 @@
     <aside id="library" aria-labelledby="lib-title">
       <h2 id="lib-title">Apps instaladas</h2>
       <input id="search" type="search" placeholder="Buscar…" aria-label="Buscar apps instaladas">
-      <ul id="installed" aria-live="polite"><li class="muted">Cargando…</li></ul>
+      <ul id="installed" aria-live="polite">
+        <li class="muted">Cargando…</li>
+      </ul>
       <details id="manual">
         <summary>Añadir a mano</summary>
         <label>Nombre <input id="m-nombre" autocomplete="off"></label>
-        <label>Ruta o URI <input id="m-ruta" autocomplete="off" placeholder="C:\…\app.exe, ms-settings:, https://…"></label>
+        <label>Ruta o URI <input id="m-ruta" autocomplete="off"
+            placeholder="C:\…\app.exe, firefox.desktop, https://…"></label>
         <label>Argumentos <input id="m-args" autocomplete="off"></label>
         <button id="m-add">Añadir al último anillo</button>
       </details>
@@ -95,4 +100,5 @@
   <script src="library.js"></script>
   <script src="settings.js"></script>
 </body>
+
 </html>

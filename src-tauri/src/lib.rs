@@ -4,7 +4,15 @@ mod cursor;
 mod geometry;
 mod icons;
 mod launcher;
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(windows)]
 mod win;
+
+#[cfg(target_os = "linux")]
+use linux as platform;
+#[cfg(windows)]
+use win as platform;
 
 use std::sync::Mutex;
 use std::time::Duration;
@@ -46,10 +54,6 @@ fn with_rt<T>(app: &AppHandle, f: impl FnOnce(&mut Runtime) -> T) -> T {
     f(&mut rt)
 }
 
-fn hwnd_of(w: &WebviewWindow) -> Option<windows::Win32::Foundation::HWND> {
-    w.hwnd().ok().map(|h| windows::Win32::Foundation::HWND(h.0 as _))
-}
-
 // ---------------------------------------------------------------- monitores y geometría
 
 fn monitor_rect(m: &Monitor) -> geometry::MonitorRect {
@@ -82,6 +86,7 @@ pub(crate) fn refresh_zone_geo(app: &AppHandle) {
     let m = &monitors[monitor_index(app, &monitors, &zona.monitor)];
     let g = geometry::compute(monitor_rect(m), zona.x, zona.y, zona.tamano, &zona.orientacion, n);
     with_rt(app, |rt| rt.geo = Some(g));
+    platform::sync_trigger_zone(app, &g);
 }
 
 // ---------------------------------------------------------------- ventana de la rueda
@@ -90,9 +95,8 @@ pub(crate) fn show_wheel(app: &AppHandle, g: ZoneGeo) {
     with_rt(app, |rt| rt.wheel_open = true);
     let a = app.clone();
     let _ = app.run_on_main_thread(move || {
-        if let Some(h) = a.get_webview_window("wheel").as_ref().and_then(hwnd_of) {
-            win::set_half_disc_region(h, g.size_phys, g.ps.round() as i32 + 2, g.facing);
-            win::show_no_activate(h, g.win_x, g.win_y, g.size_phys, g.size_phys);
+        if let Some(w) = a.get_webview_window("wheel") {
+            platform::show_wheel(&w, &g);
         }
         let _ = a.emit_to(
             "wheel",
@@ -113,8 +117,8 @@ pub(crate) fn hide_wheel(app: &AppHandle) {
         }
         let b = a.clone();
         let _ = a.run_on_main_thread(move || {
-            if let Some(h) = b.get_webview_window("wheel").as_ref().and_then(hwnd_of) {
-                win::set_empty_region(h);
+            if let Some(w) = b.get_webview_window("wheel") {
+                platform::hide_wheel(&w);
             }
         });
     });
@@ -409,11 +413,7 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
 
 fn setup_wheel_window(app: &AppHandle) {
     let Some(w) = app.get_webview_window("wheel") else { return };
-    if let Some(h) = hwnd_of(&w) {
-        win::make_tool_noactivate(h);
-        win::set_empty_region(h);
-        win::show_no_activate(h, 0, 0, 532, 532);
-    }
+    platform::setup_wheel(&w);
 }
 
 /// `orbe.exe --ajustes` abre los ajustes; `orbe.exe --colocar`, el modo colocar.

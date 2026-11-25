@@ -521,5 +521,5 @@
   load();
   invoke("list_installed_apps")
     .then(list => { installed = list || []; renderInstalled(); })
-    .catch(e => status("No se pudo leer el menú Inicio: " + e, true));
+    .catch(e => status("No se pudieron leer las apps instaladas: " + e, true));
 })();

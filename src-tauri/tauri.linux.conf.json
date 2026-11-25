@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["libgtk-layer-shell0"]
+      },
+      "rpm": {
+        "depends": ["gtk-layer-shell"]
+      },
+      "appimage": {
+        "files": {
+          "/usr/lib/libgtk-layer-shell.so.0": "/usr/lib/x86_64-linux-gnu/libgtk-layer-shell.so.0"
+        }
+      }
+    }
+  }
+}

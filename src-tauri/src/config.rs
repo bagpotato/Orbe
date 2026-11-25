@@ -95,57 +95,111 @@ impl Default for Aspecto {
     }
 }
 
+#[cfg(windows)]
+fn default_groups() -> [(&'static str, &'static [(&'static str, &'static str, &'static str, &'static str)]); 3] {
+    [
+        (
+            "Sistema",
+            &[
+                ("ajustes", "Ajustes", "ms-settings:", "gear"),
+                ("archivos", "Archivos", "explorer.exe", "folder"),
+                ("terminal", "Terminal", "wt.exe", "terminal"),
+                ("monitor", "Monitor", "taskmgr.exe", "pulse"),
+                ("papelera", "Papelera", "shell:RecycleBinFolder", "trash"),
+                ("bloquear", "Bloquear", "orbe:bloquear", "lock"),
+            ],
+        ),
+        (
+            "Trabajo",
+            &[
+                ("notas", "Bloc de notas", "notepad.exe", "notes"),
+                ("calculadora", "Calculadora", "calc.exe", "calc"),
+                ("paint", "Paint", "mspaint.exe", "pen"),
+                ("cmd", "Símbolo del sistema", "cmd.exe", "terminal"),
+                ("powershell", "PowerShell", "powershell.exe", "code"),
+                ("descargas", "Descargas", "shell:Downloads", "download"),
+                ("documentos", "Documentos", "shell:Personal", "book"),
+                ("red", "Red", "ms-settings:network", "wifi"),
+                ("sonido", "Sonido", "ms-settings:sound", "music"),
+            ],
+        ),
+        (
+            "Favoritos",
+            &[
+                ("navegador", "Navegador", "https://duckduckgo.com", "globe"),
+                ("correo", "Correo", "mailto:", "mail"),
+                ("calendario", "Calendario", "outlookcal:", "calendar"),
+                ("fotos", "Fotos", "ms-photos:", "photo"),
+                ("musica", "Música", "mswindowsmusic:", "music"),
+                ("mapas", "Mapas", "bingmaps:", "map"),
+                ("tiempo", "Tiempo", "bingweather:", "sun"),
+                ("recortes", "Recortes", "ms-screenclip:", "image"),
+                ("tienda", "Tienda", "ms-windows-store:", "cart"),
+                ("xbox", "Xbox", "xbox:", "game"),
+                ("reloj", "Reloj", "ms-clock:", "bell"),
+                ("camara", "Cámara", "microsoft.windows.camera:", "photo"),
+                ("mensajes", "Mensajes", "ms-chat:", "chat"),
+                ("notas_rapidas", "Notas rápidas", "ms-stickynotes:", "notes"),
+            ],
+        ),
+    ]
+}
+
+#[cfg(not(windows))]
+fn default_groups() -> [(&'static str, &'static [(&'static str, &'static str, &'static str, &'static str)]); 3] {
+    [
+        (
+            "Sistema",
+            &[
+                ("ajustes", "Ajustes", "gnome-control-center", "gear"),
+                ("archivos", "Archivos", "xdg-open ~", "folder"),
+                ("terminal", "Terminal", "x-terminal-emulator", "terminal"),
+                ("monitor", "Monitor", "htop", "pulse"),
+                ("papelera", "Papelera", "trash:///", "trash"),
+                ("bloquear", "Bloquear", "orbe:bloquear", "lock"),
+            ],
+        ),
+        (
+            "Trabajo",
+            &[
+                ("notas", "Editor", "xdg-open ~/Documentos", "notes"),
+                ("calculadora", "Calculadora", "gnome-calculator", "calc"),
+                ("paint", "Dibujo", "gimp", "pen"),
+                ("cmd", "Consola", "kitty", "terminal"),
+                ("powershell", "Código", "code", "code"),
+                ("descargas", "Descargas", "xdg-open ~/Descargas", "download"),
+                ("documentos", "Documentos", "xdg-open ~/Documentos", "book"),
+                ("red", "Red", "nm-connection-editor", "wifi"),
+                ("sonido", "Sonido", "pavucontrol", "music"),
+            ],
+        ),
+        (
+            "Favoritos",
+            &[
+                ("navegador", "Navegador", "https://duckduckgo.com", "globe"),
+                ("correo", "Correo", "mailto:", "mail"),
+                ("calendario", "Calendario", "https://calendar.google.com", "calendar"),
+                ("fotos", "Imágenes", "xdg-open ~/Imágenes", "photo"),
+                ("musica", "Música", "xdg-open ~/Música", "music"),
+                ("mapas", "Mapas", "https://www.openstreetmap.org", "map"),
+                ("tiempo", "Tiempo", "https://wttr.in", "sun"),
+                ("recortes", "Capturas", "flameshot", "image"),
+                ("tienda", "Software", "gnome-software", "cart"),
+                ("steam", "Juegos", "steam", "game"),
+                ("reloj", "Reloj", "gnome-clocks", "bell"),
+                ("camara", "Vídeos", "xdg-open ~/Vídeos", "photo"),
+                ("mensajes", "Mensajes", "https://web.whatsapp.com", "chat"),
+                ("notas_rapidas", "Notas", "obsidian", "notes"),
+            ],
+        ),
+    ]
+}
+
 impl Default for Config {
     fn default() -> Self {
         let mut apps = BTreeMap::new();
         let mut anillos = Vec::new();
-        let grupos: [(&str, &[(&str, &str, &str, &str)]); 3] = [
-            (
-                "Sistema",
-                &[
-                    ("ajustes", "Ajustes", "ms-settings:", "gear"),
-                    ("archivos", "Archivos", "explorer.exe", "folder"),
-                    ("terminal", "Terminal", "wt.exe", "terminal"),
-                    ("monitor", "Monitor", "taskmgr.exe", "pulse"),
-                    ("papelera", "Papelera", "shell:RecycleBinFolder", "trash"),
-                    ("bloquear", "Bloquear", "orbe:bloquear", "lock"),
-                ],
-            ),
-            (
-                "Trabajo",
-                &[
-                    ("notas", "Bloc de notas", "notepad.exe", "notes"),
-                    ("calculadora", "Calculadora", "calc.exe", "calc"),
-                    ("paint", "Paint", "mspaint.exe", "pen"),
-                    ("cmd", "Símbolo del sistema", "cmd.exe", "terminal"),
-                    ("powershell", "PowerShell", "powershell.exe", "code"),
-                    ("descargas", "Descargas", "shell:Downloads", "download"),
-                    ("documentos", "Documentos", "shell:Personal", "book"),
-                    ("red", "Red", "ms-settings:network", "wifi"),
-                    ("sonido", "Sonido", "ms-settings:sound", "music"),
-                ],
-            ),
-            (
-                "Favoritos",
-                &[
-                    ("navegador", "Navegador", "https://duckduckgo.com", "globe"),
-                    ("correo", "Correo", "mailto:", "mail"),
-                    ("calendario", "Calendario", "outlookcal:", "calendar"),
-                    ("fotos", "Fotos", "ms-photos:", "photo"),
-                    ("musica", "Música", "mswindowsmusic:", "music"),
-                    ("mapas", "Mapas", "bingmaps:", "map"),
-                    ("tiempo", "Tiempo", "bingweather:", "sun"),
-                    ("recortes", "Recortes", "ms-screenclip:", "image"),
-                    ("tienda", "Tienda", "ms-windows-store:", "cart"),
-                    ("xbox", "Xbox", "xbox:", "game"),
-                    ("reloj", "Reloj", "ms-clock:", "bell"),
-                    ("camara", "Cámara", "microsoft.windows.camera:", "photo"),
-                    ("mensajes", "Mensajes", "ms-chat:", "chat"),
-                    ("notas_rapidas", "Notas rápidas", "ms-stickynotes:", "notes"),
-                ],
-            ),
-        ];
-        for (nombre, lista) in grupos {
+        for (nombre, lista) in default_groups() {
             let mut ids = Vec::new();
             for (id, n, ruta, icono) in lista {
                 apps.insert(
@@ -167,7 +221,21 @@ impl Default for Config {
 }
 
 pub fn config_dir() -> PathBuf {
-    std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(".")).join("orbe")
+    #[cfg(windows)]
+    {
+        std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(".")).join("orbe")
+    }
+    #[cfg(not(windows))]
+    {
+        if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME").filter(|v| !v.is_empty()) {
+            return PathBuf::from(xdg).join("orbe");
+        }
+        std::env::var_os("HOME")
+            .filter(|v| !v.is_empty())
+            .map(|h| PathBuf::from(h).join(".config"))
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("orbe")
+    }
 }
 
 pub fn config_path() -> PathBuf {

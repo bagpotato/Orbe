@@ -1,23 +1,39 @@
-//! Icono real de un archivo (exe, lnk…) como PNG en data URL, con caché en disco.
+//! Icono real de una app (exe/lnk en Windows o tema de iconos Freedesktop en Linux)
+//! como data URL, con caché en disco.
 
 use base64::Engine;
 use std::path::{Path, PathBuf};
 
+#[cfg(windows)]
 use windows::core::HSTRING;
+#[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{
     CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits, GetObjectW, BITMAP, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
     DIB_RGB_COLORS, HBITMAP, HGDIOBJ,
 };
+#[cfg(windows)]
 use windows::Win32::Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES;
+#[cfg(windows)]
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
+#[cfg(windows)]
 use windows::Win32::UI::Controls::{IImageList, ILD_TRANSPARENT};
+#[cfg(windows)]
 use windows::Win32::UI::Shell::{SHGetFileInfoW, SHGetImageList, SHFILEINFOW, SHGFI_SYSICONINDEX, SHIL_EXTRALARGE};
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{DestroyIcon, GetIconInfo, HICON, ICONINFO};
 
+#[cfg(windows)]
 pub fn icon_data_url(ruta: &str) -> Option<String> {
     let path = resolve(ruta)?;
     let png = cached_or_extract(&path)?;
     Some(format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png)))
+}
+
+#[cfg(not(windows))]
+pub fn icon_data_url(ruta: &str) -> Option<String> {
+    let icon_name = linux_icon_name(ruta)?;
+    let path = resolve_linux_icon(&icon_name)?;
+    file_data_url(&path)
 }
 
 const MAX_IMAGE: usize = 2 * 1024 * 1024;
@@ -38,7 +54,7 @@ pub fn app_image(imagen: &str, ruta: &str) -> Option<String> {
     icon_data_url(ruta)
 }
 
-/// Tipo MIME por los primeros bytes; solo formatos de imagen que WebView2 sabe pintar.
+/// Tipo MIME por los primeros bytes; solo formatos de imagen que WebView sabe pintar.
 fn sniff_mime(b: &[u8]) -> Option<&'static str> {
     if b.starts_with(&[0x89, b'P', b'N', b'G']) {
         Some("image/png")
@@ -65,7 +81,7 @@ fn file_data_url(path: &Path) -> Option<String> {
     Some(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(&bytes)))
 }
 
-/// Guarda una imagen importada desde los ajustes en `%APPDATA%\orbe\imagenes` y devuelve su ruta.
+/// Guarda una imagen importada desde los ajustes en `<config_dir>/imagenes` y devuelve su ruta.
 pub fn import_image(nombre: &str, data_url: &str) -> Result<String, String> {
     let b64 = data_url.split_once(";base64,").map(|(_, d)| d).ok_or("Formato de imagen no válido")?;
     let bytes = base64::engine::general_purpose::STANDARD.decode(b64.trim()).map_err(|_| "Imagen dañada")?;
@@ -98,6 +114,7 @@ pub fn import_image(nombre: &str, data_url: &str) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+#[cfg(windows)]
 /// Convierte una ruta de la config en un archivo existente, o None si es una URI.
 pub fn resolve(ruta: &str) -> Option<PathBuf> {
     let r = crate::launcher::expand_env(ruta.trim());
@@ -127,6 +144,154 @@ pub fn resolve(ruta: &str) -> Option<PathBuf> {
     dirs.into_iter().map(|d| d.join(r)).find(|c| c.is_file())
 }
 
+#[cfg(not(windows))]
+fn linux_icon_name(ruta: &str) -> Option<String> {
+    let r = crate::launcher::expand_env(ruta.trim());
+    let r = r.trim_matches('"');
+    if r.is_empty() {
+        return None;
+    }
+    if let Some((scheme, _)) = r.split_once(':') {
+        if !scheme.is_empty() && scheme.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.')) {
+            return None; // https:, mailto:, orbe:, trash:…
+        }
+    }
+    if r.ends_with(".desktop") {
+        if let Some(p) = crate::apps::find_desktop_file(r) {
+            if let Ok(content) = std::fs::read_to_string(&p) {
+                if let Some(entry) = crate::apps::parse_desktop_entry(&content, "") {
+                    if !entry.icon.is_empty() {
+                        return Some(entry.icon);
+                    }
+                }
+            }
+        }
+    }
+    let cmd = r.split_whitespace().next()?;
+    let stem = Path::new(cmd).file_stem()?.to_str()?;
+    if let Some(p) = crate::apps::find_desktop_file(stem) {
+        if let Ok(content) = std::fs::read_to_string(&p) {
+            if let Some(entry) = crate::apps::parse_desktop_entry(&content, "") {
+                if !entry.icon.is_empty() {
+                    return Some(entry.icon);
+                }
+            }
+        }
+    }
+    Some(stem.to_string())
+}
+
+#[cfg(not(windows))]
+fn gtk_icon_themes() -> Vec<String> {
+    let mut themes = Vec::new();
+    if let Some(home) = std::env::var_os("HOME").filter(|v| !v.is_empty()) {
+        for rel in [".config/gtk-3.0/settings.ini", ".config/gtk-4.0/settings.ini"] {
+            if let Ok(text) = std::fs::read_to_string(PathBuf::from(&home).join(rel)) {
+                for line in text.lines() {
+                    if let Some((k, v)) = line.split_once('=') {
+                        if k.trim() == "gtk-icon-theme-name" {
+                            let t = v.trim();
+                            if !t.is_empty() && !themes.iter().any(|x| x == t) {
+                                themes.push(t.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for fb in ["hicolor", "Adwaita", "Papirus", "breeze", "gnome"] {
+        if !themes.iter().any(|x| x == fb) {
+            themes.push(fb.to_string());
+        }
+    }
+    themes
+}
+
+#[cfg(not(windows))]
+fn resolve_linux_icon(icon_name: &str) -> Option<PathBuf> {
+    let mut icon_dirs = Vec::new();
+    let mut pixmap_dirs = Vec::new();
+    if let Some(home) = std::env::var_os("HOME").filter(|v| !v.is_empty()) {
+        let h = PathBuf::from(home);
+        icon_dirs.push(h.join(".local/share/icons"));
+        icon_dirs.push(h.join(".icons"));
+        icon_dirs.push(h.join(".local/share/flatpak/exports/share/icons"));
+    }
+    if let Some(data_dirs) = std::env::var_os("XDG_DATA_DIRS").filter(|v| !v.is_empty()) {
+        for d in std::env::split_paths(&data_dirs) {
+            icon_dirs.push(d.join("icons"));
+            pixmap_dirs.push(d.join("pixmaps"));
+        }
+    } else {
+        icon_dirs.push(PathBuf::from("/usr/local/share/icons"));
+        icon_dirs.push(PathBuf::from("/usr/share/icons"));
+        pixmap_dirs.push(PathBuf::from("/usr/share/pixmaps"));
+    }
+    icon_dirs.push(PathBuf::from("/var/lib/flatpak/exports/share/icons"));
+    pixmap_dirs.push(PathBuf::from("/usr/share/pixmaps"));
+    find_icon_in_dirs(icon_name, &icon_dirs, &pixmap_dirs, &gtk_icon_themes())
+}
+
+/// Busca un icono Freedesktop por nombre o ruta absoluta en los directorios de temas y pixmaps.
+pub(crate) fn find_icon_in_dirs(
+    icon_name: &str,
+    icon_dirs: &[PathBuf],
+    pixmap_dirs: &[PathBuf],
+    preferred_themes: &[String],
+) -> Option<PathBuf> {
+    let icon_name = icon_name.trim();
+    if icon_name.is_empty() {
+        return None;
+    }
+    let direct = Path::new(icon_name);
+    if direct.is_absolute() && direct.is_file() {
+        return Some(direct.to_path_buf());
+    }
+
+    const SIZES: &[&str] = &["64x64", "48x48", "128x128", "scalable", "96x96", "32x32", "256x256"];
+    const CATS: &[&str] = &["apps", "categories", "devices", "places", "mimetypes", "actions", "status"];
+    const EXTS: &[&str] = &["png", "svg", "webp"];
+
+    for theme in preferred_themes {
+        for base in icon_dirs {
+            let tdir = base.join(theme);
+            if !tdir.is_dir() {
+                continue;
+            }
+            for size in SIZES {
+                for cat in CATS {
+                    for ext in EXTS {
+                        let p1 = tdir.join(size).join(cat).join(format!("{icon_name}.{ext}"));
+                        if p1.is_file() {
+                            return Some(p1);
+                        }
+                        let p2 = tdir.join(cat).join(size).join(format!("{icon_name}.{ext}"));
+                        if p2.is_file() {
+                            return Some(p2);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for dir in pixmap_dirs {
+        let exact = dir.join(icon_name);
+        if exact.is_file() {
+            return Some(exact);
+        }
+        for ext in EXTS {
+            let p = dir.join(format!("{icon_name}.{ext}"));
+            if p.is_file() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+#[allow(dead_code)]
 fn fnv1a(s: &str) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for b in s.bytes() {
@@ -136,6 +301,7 @@ fn fnv1a(s: &str) -> u64 {
     h
 }
 
+#[cfg(windows)]
 fn cached_or_extract(path: &Path) -> Option<Vec<u8>> {
     let key = path.to_string_lossy().to_lowercase();
     let cache = crate::config::config_dir().join("icons").join(format!("{:016x}.png", fnv1a(&key)));
@@ -151,10 +317,12 @@ fn cached_or_extract(path: &Path) -> Option<Vec<u8>> {
     Some(png)
 }
 
+#[cfg(windows)]
 /// La lista de imágenes del sistema es compartida por todo el proceso: extraer desde varios
 /// hilos a la vez devuelve iconos cruzados entre apps (y se quedarían en la caché).
 static EXTRACT_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[cfg(windows)]
 fn extract(path: &Path) -> Option<(u32, u32, Vec<u8>)> {
     let _guard = EXTRACT_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     unsafe {
@@ -178,6 +346,7 @@ fn extract(path: &Path) -> Option<(u32, u32, Vec<u8>)> {
     }
 }
 
+#[cfg(windows)]
 unsafe fn bitmap_bits(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     let mut bm = BITMAP::default();
     if GetObjectW(HGDIOBJ(hbm.0), std::mem::size_of::<BITMAP>() as i32, Some(&mut bm as *mut _ as *mut _)) == 0 {
@@ -204,6 +373,7 @@ unsafe fn bitmap_bits(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     (lines == h).then_some((w as u32, h as u32, buf))
 }
 
+#[cfg(windows)]
 unsafe fn hicon_to_rgba(hicon: HICON) -> Option<(u32, u32, Vec<u8>)> {
     let mut ii = ICONINFO::default();
     GetIconInfo(hicon, &mut ii).ok()?;
@@ -234,6 +404,7 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<(u32, u32, Vec<u8>)> {
     Some((w, h, px))
 }
 
+#[cfg(any(windows, test))]
 fn encode_png(w: u32, h: u32, rgba: &[u8]) -> Option<Vec<u8>> {
     let mut out = Vec::new();
     {
@@ -251,6 +422,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(windows)]
     fn uris_no_tienen_icono() {
         assert_eq!(resolve("https://x.com"), None);
         assert_eq!(resolve("shell:Downloads"), None);
@@ -259,6 +431,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn encuentra_en_path() {
         assert!(resolve("notepad.exe").is_some());
         assert!(resolve(r"C:\Windows\explorer.exe").is_some());
@@ -285,11 +458,36 @@ mod tests {
     }
 
     #[test]
+    fn busca_icono_en_temas() {
+        let base = std::env::temp_dir().join(format!("orbe_icon_test_{}", std::process::id()));
+        let app_dir = base.join("icons/hicolor/48x48/apps");
+        let pix_dir = base.join("pixmaps");
+        std::fs::create_dir_all(&app_dir).unwrap();
+        std::fs::create_dir_all(&pix_dir).unwrap();
+        let png_path = app_dir.join("demo.png");
+        let svg_path = pix_dir.join("otro.svg");
+        std::fs::write(&png_path, b"\x89PNG").unwrap();
+        std::fs::write(&svg_path, b"<svg></svg>").unwrap();
+
+        let themes = vec!["hicolor".to_string()];
+        assert_eq!(
+            find_icon_in_dirs("demo", &[base.join("icons")], &[pix_dir.clone()], &themes),
+            Some(png_path)
+        );
+        assert_eq!(
+            find_icon_in_dirs("otro", &[base.join("icons")], &[pix_dir], &themes),
+            Some(svg_path)
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
     fn hash() {
         assert_eq!(fnv1a(""), 0xcbf29ce484222325);
     }
 
     #[test]
+    #[cfg(windows)]
     fn extrae_icono_real() {
         let p = resolve("notepad.exe").unwrap();
         let (w, h, px) = extract(&p).expect("icono de notepad");

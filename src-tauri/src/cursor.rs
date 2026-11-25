@@ -3,7 +3,7 @@
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
-use crate::{geometry, win, AppState};
+use crate::{geometry, platform, AppState};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
@@ -79,7 +79,7 @@ fn run(app: AppHandle) {
         }
         if now.duration_since(last_fs) >= FULLSCREEN_EVERY {
             last_fs = now;
-            fullscreen = win::foreground_is_fullscreen();
+            fullscreen = platform::foreground_is_fullscreen();
             if debug && fullscreen != was_fullscreen {
                 eprintln!("[orbe] pantalla completa: {fullscreen}");
             }
@@ -108,12 +108,29 @@ fn run(app: AppHandle) {
         }
 
         let Some(g) = geo else { continue };
-        let Some((px, py)) = win::cursor_pos() else { continue };
-        let (px, py) = (px as f64, py as f64);
-        let input = Input {
-            in_zone: geometry::in_zone(&g, px, py),
-            in_wheel: state != State::Escondida && geometry::in_wheel(&g, px, py),
-            enabled: enabled && !fullscreen,
+        let (px, py, input) = if platform::uses_native_trigger() {
+            let (in_zone, in_wheel) = platform::native_hover_state();
+            (
+                0.0,
+                0.0,
+                Input {
+                    in_zone,
+                    in_wheel: state != State::Escondida && in_wheel,
+                    enabled: enabled && !fullscreen,
+                },
+            )
+        } else {
+            let Some((x, y)) = platform::cursor_pos() else { continue };
+            let (px, py) = (x as f64, y as f64);
+            (
+                px,
+                py,
+                Input {
+                    in_zone: geometry::in_zone(&g, px, py),
+                    in_wheel: state != State::Escondida && geometry::in_wheel(&g, px, py),
+                    enabled: enabled && !fullscreen,
+                },
+            )
         };
 
         let (next, action) = step(state, input, now, retardo, gracia);
